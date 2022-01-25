@@ -1,4 +1,4 @@
-package smtpServer;
+package mailServer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,31 +6,29 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Lauri Holopainen
- *
- */
-public class SmtpServer {
-
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-        listenSmtp();
+public class SmtpListener {
+    public MailServer mailServer;
+    
+    public SmtpListener(MailServer server) {
+        mailServer = server;
     }
 
-    private static void listenSmtp() {
-        // Recources are closed when exiting try block.
+    public void listenSmtp() throws IOException {
         int smtpPortNumber = 25000;
-        try (var serverSocket = new ServerSocket(smtpPortNumber);
-                var clientSocket = serverSocket.accept();
-                var out = new PrintWriter(clientSocket.getOutputStream(), true);
-                var in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
-            String inputLine;
-            String mailFrom;
+        ServerSocket serverSocket = null;
+        Socket clientSocket = null;
+        try {
+            serverSocket = new ServerSocket(smtpPortNumber);
+            serverSocket.setSoTimeout(1000);
+            clientSocket = serverSocket.accept();
+            var out = new PrintWriter(clientSocket.getOutputStream(), true);
+            var in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+            String mailFrom = "";
             String data = "";
             List<String> rcpts = new ArrayList<>();
 
@@ -38,7 +36,7 @@ public class SmtpServer {
             String state = "220";
 
             while (!state.equals("221")) {
-                inputLine = in.readLine();
+                var inputLine = in.readLine();
                 System.out.println(inputLine);
                 String expectedCommand;
                 switch (state) {
@@ -78,6 +76,7 @@ public class SmtpServer {
                     break;
                 case "354":
                     if (inputLine.equals(".")) {
+                        mailServer.addMail(new Mail(data, mailFrom, rcpts));
                         out.println("250 2.0.0 OK");
                         state = "2.0.0";
                     } else
@@ -96,9 +95,15 @@ public class SmtpServer {
                     break;
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SocketTimeoutException e) {
+            // Expected
+        } finally {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+            if (clientSocket != null) {
+                clientSocket.close();
+            }
         }
     }
-
 }

@@ -20,7 +20,7 @@ public class Pop3Client {
      */
     public static void main(String[] args) {
         var client = new Pop3Client(); 
-        try (var socket = new Socket("localhost", 110);
+        try (var socket = new Socket("localhost", 11000);
                 var out = new PrintWriter(socket.getOutputStream(), true);
                 var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
             client.Authorize(in, out);
