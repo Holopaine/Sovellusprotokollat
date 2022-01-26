@@ -77,9 +77,9 @@ public class Pop3Client {
         System.out.println(String.format("%s unread email(s).", response[1]));
         
         var quit = false;
+        System.out.print("Available actions:\n" + "s: Status\n" + "l [msg]: List\n" + "r msg: Retrieve a message.\n"
+                + "q: Quit\n");
         while (!quit) {
-            System.out.print("Available actions:\n" + "s: Status\n" + "l [msg]: List\n" + "r msg: Retrieve a message.\n"
-                    + "q: Quit\n");
             var action = consoleInput.nextLine().split(" ");
             var msg = (action.length > 1) ? action[1] : "";
             switch (action[0]) {

@@ -18,7 +18,7 @@ public class ImapClient {
      */
     public static void main(String[] args) {
         var client = new ImapClient();
-        try (var socket = new Socket("localhost", 143);
+        try (var socket = new Socket("localhost", 14300);
                 var out = new PrintWriter(socket.getOutputStream(), true);
                 var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));) {
             client.authenticate(in, out);
@@ -165,6 +165,7 @@ public class ImapClient {
         var tag = getTag();
         out.println(String.format("%s SEARCH UNSEEN", tag));
         var response = in.readLine();
+        System.out.println(response);
         var unseen = new String[0];
         if (response != null && response.startsWith("* SEARCH")) {
             unseen = response.substring("* SEARCH".length()).trim().split(" ");

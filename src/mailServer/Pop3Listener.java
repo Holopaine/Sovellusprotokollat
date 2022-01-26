@@ -16,11 +16,11 @@ public class Pop3Listener {
     }
 
     public void listenPop3() throws IOException {
-        int smtpPortNumber = 11000;
+        int portNumber = 11000;
         ServerSocket serverSocket = null;
         Socket clientSocket = null;
         try {
-            serverSocket = new ServerSocket(smtpPortNumber);
+            serverSocket = new ServerSocket(portNumber);
             serverSocket.setSoTimeout(1000);
             clientSocket = serverSocket.accept();
             var out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -34,8 +34,13 @@ public class Pop3Listener {
             out.println(String.format("+OK TIES323 Server ready for requests from, %s",
                     clientSocket.getInetAddress().toString()));
             while (!quit) {
-
-                var command = in.readLine().split(" ");
+                var inputLine = in.readLine();
+                if (inputLine == null) {
+                    // Client closed the connection.
+                    quit = true;
+                    continue;
+                }
+                var command = inputLine.split(" ");
                 switch (command[0].toUpperCase()) {
                 case "USER":
                     if ((command.length > 1) && (command[1].length() > 0)) {
@@ -56,7 +61,8 @@ public class Pop3Listener {
                     break;
                 case "STAT":
                     if (auth) {
-                        out.println(String.format("+OK %s %s", mailServer.getMailbox().size(), mailServer.countOctets()));
+                        out.println(
+                                String.format("+OK %s %s", mailServer.getMails().size(), mailServer.countOctets(0)));
                     } else {
                         out.println(String.format("-ERR bad command"));
                     }
@@ -64,17 +70,19 @@ public class Pop3Listener {
                 case "LIST":
                     if (auth) {
                         if (command.length == 1) {
-                            out.println(String.format("+OK %s %s", mailServer.getMailbox().size(), mailServer.countOctets()));
-                            for (int i = 0; i < mailServer.getMailbox().size(); i++) {
-                                out.println(String.format("%s %s", i, mailServer.getMailbox().get(i).data.getBytes().length));
+                            out.println(String.format("+OK %s %s", mailServer.getMails().size(),
+                                    mailServer.countOctets(0)));
+                            for (int i = 0; i < mailServer.getMails().size(); i++) {
+                                out.println(
+                                        String.format("%s %s", i, mailServer.getMails().get(i).data.getBytes().length));
                             }
                             out.println(".");
                         } else if (command.length == 2) {
                             try {
                                 var msg = Integer.parseInt(command[1]);
-                                if (msg >= 0 && msg < mailServer.getMailbox().size()) {
-                                    out.println(
-                                            String.format("+OK %s %s", msg, mailServer.getMailbox().get(msg).data.getBytes().length));
+                                if (msg >= 0 && msg < mailServer.getMails().size()) {
+                                    out.println(String.format("+OK %s %s", msg,
+                                            mailServer.getMails().get(msg).data.getBytes().length));
                                 } else {
                                     out.println(String.format("-ERR Message number out of range."));
                                 }
@@ -93,11 +101,11 @@ public class Pop3Listener {
                         if (command.length == 2) {
                             try {
                                 var msg = Integer.parseInt(command[1]);
-                                if (msg >= 0 && msg < mailServer.getMailbox().size()) {
-                                    out.println(
-                                            String.format("+OK %s %s", msg, mailServer.getMailbox().get(msg).data.getBytes().length));
+                                if (msg >= 0 && msg < mailServer.getMails().size()) {
+                                    out.println(String.format("+OK %s %s", msg,
+                                            mailServer.getMails().get(msg).data.getBytes().length));
 //                                    out.println(mailbox.get(msg).data+"\r\n.");
-                                    mailServer.getMailbox().get(msg).data.lines().forEach(line -> out.println(line));
+                                    mailServer.getMails().get(msg).data.lines().forEach(line -> out.println(line));
                                     out.println(".");
                                 } else {
                                     out.println(String.format("-ERR Message number out of range."));
