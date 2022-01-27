@@ -144,7 +144,8 @@ public class FtpClient {
     private void readAndSaveFile(DataInputStream dataIn, String filepath) throws IOException {
         try {
             var data = dataIn.readAllBytes();
-            Path path = FileSystems.getDefault().getPath("").toAbsolutePath().resolve(filepath);
+            var filename = Path.of(filepath).getFileName();
+            Path path = FileSystems.getDefault().getPath("").toAbsolutePath().resolve(filename);
             Files.createDirectories(path.getParent());
             Files.write(path, data, StandardOpenOption.CREATE_NEW);
         } catch (FileAlreadyExistsException e) {
